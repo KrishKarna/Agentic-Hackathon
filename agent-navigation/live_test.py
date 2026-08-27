@@ -31,7 +31,7 @@ if not cap.isOpened():
 window_name = "AI Navigation Assistant"
 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
-current_intent = "find_seat"
+current_intent = "check_obstacle"
 
 MESSAGE_COOLDOWN = 3
 last_message_time = -MESSAGE_COOLDOWN
