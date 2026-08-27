@@ -22,7 +22,7 @@ window_name = "Camera"
 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
 # change this to test different intents: "check_obstacle", "find_entrance", "describe_scene", etc.
-current_intent = "check_obstacle"
+current_intent = "find_seat"
 
 while True:
     ret, frame = cap.read()
