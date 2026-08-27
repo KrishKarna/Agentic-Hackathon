@@ -1,7 +1,7 @@
 import os
-from google import genai
+from groq import Groq
 
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 
 class NavigationAgent:
@@ -38,11 +38,11 @@ Give ONE short, clear, spoken-style instruction for the user based on this infor
 If nothing relevant is detected, say so briefly.
 Keep it under 20 words. Do not explain your reasoning, just give the instruction."""
 
-        response = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=prompt
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=[{"role": "user", "content": prompt}]
         )
-        return response.text.strip()
+        return response.choices[0].message.content.strip()
 
 
 if __name__ == "__main__":
