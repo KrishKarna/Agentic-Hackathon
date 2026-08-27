@@ -24,24 +24,13 @@ def get_distance(box_area, frame_area):
         return "far"
 
 
-cap = cv2.VideoCapture(0)
-
-if not cap.isOpened():
-    print("Error: Could not open camera.")
-    exit()
-
-
-while True:
-    ret, frame = cap.read()
-
-    if not ret:
-        print("Error: Could not read camera.")
-        break
-
+def analyze_frame(frame):
     height, width, _ = frame.shape
     frame_area = width * height
 
     results = model(frame, verbose=False)[0]
+
+    scene = []
 
     for box in results.boxes:
         cls_id = int(box.cls[0])
@@ -55,24 +44,12 @@ while True:
         position = get_position(x_center, width)
         distance = get_distance(box_area, frame_area)
 
-        message = (
-            f"Detected {label} "
-            f"on your {position}, "
-            f"{distance} away."
-        )
-
-        print(message)
+        scene.append({
+            "object": label,
+            "position": position,
+            "distance": distance
+        })
 
     annotated_frame = results.plot()
 
-    cv2.imshow("YOLO Vision", annotated_frame)
-
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-
-    if cv2.getWindowProperty("YOLO Vision", cv2.WND_PROP_VISIBLE) < 1:
-        break
-
-
-cap.release()
-cv2.destroyAllWindows()
+    return scene, annotated_frame
