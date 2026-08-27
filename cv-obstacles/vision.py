@@ -1,7 +1,6 @@
 import cv2
 from ultralytics import YOLO
 
-# Load a small, fast pretrained model (downloads automatically first time)
 model = YOLO("yolov8n.pt")
 
 def get_position(x_center, frame_width):
@@ -16,7 +15,9 @@ def get_distance(box_area, frame_area):
     ratio = box_area / frame_area
     return "near" if ratio > 0.15 else "far"
 
-cap = cv2.VideoCapture(0)  # 0 = default webcam
+cap = cv2.VideoCapture(0)
+window_name = "Camera"
+cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
 while True:
     ret, frame = cap.read()
@@ -43,14 +44,17 @@ while True:
             "distance": get_distance(box_area, frame_area)
         })
 
-    # print what was detected this frame
     print(scene)
 
-    # show the camera feed with detections drawn (optional, for debugging)
     annotated_frame = results.plot()
-    cv2.imshow("Camera", annotated_frame)
+    cv2.imshow(window_name, annotated_frame)
 
+    # exit if 'q' pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+    # exit if the window's X button was clicked
+    if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
         break
 
 cap.release()
