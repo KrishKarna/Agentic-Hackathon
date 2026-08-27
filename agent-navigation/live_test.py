@@ -1,13 +1,13 @@
 import os
 import sys
+import time
 import cv2
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "cv-obstacles")))
 
 from vision import analyze_frame
-
 from agent import NavigationAgent
-
+from speech import speak
 
 agent = NavigationAgent()
 
@@ -22,6 +22,9 @@ cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
 current_intent = "find_seat"
 
+MESSAGE_COOLDOWN = 5
+last_message_time = 0
+
 while True:
     ret, frame = cap.read()
 
@@ -33,8 +36,11 @@ while True:
 
     message = agent.decide(current_intent, scene, [])
 
-    if message:
+    current_time = time.time()
+
+    if message and current_time - last_message_time >= MESSAGE_COOLDOWN:
         print(message)
+        last_message_time = current_time
 
     cv2.imshow(window_name, annotated_frame)
 
