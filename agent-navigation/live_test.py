@@ -5,11 +5,10 @@ import cv2
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "cv-obstacles")))
 
 from vision import analyze_frame
-
 from agent import NavigationAgent
 
-
 agent = NavigationAgent()
+agent.set_target("chair")   # tell it what object to look for, since find_object needs a target now
 
 cap = cv2.VideoCapture(0)
 
@@ -20,7 +19,7 @@ if not cap.isOpened():
 window_name = "AI Navigation Assistant"
 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
-current_intent = "find_seat"
+current_intent = "find_object"   # changed from "find_seat"
 
 while True:
     ret, frame = cap.read()
