@@ -45,24 +45,20 @@ while True:
 
     scene, annotated_frame = analyze_frame(frame)
 
-    message = agent.decide(current_intent, scene, [])
-
     current_time = time.time()
 
-    if message is not None:
-        if current_time - last_message_time >= MESSAGE_COOLDOWN:
+    if current_time - last_message_time >= MESSAGE_COOLDOWN:
+        message = agent.decide(current_intent, scene, [])
+        if message is not None:
             speak(message)
-            last_message_time = current_time
+        last_message_time = current_time
 
     cv2.imshow(window_name, annotated_frame)
 
     key = cv2.waitKey(1) & 0xFF
 
+    # exit if 'q' pressed
     if key == ord("q"):
         break
 
-    if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+    # exit if window was closed via
