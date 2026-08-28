@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Navigation Assistant</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --panel: #161922;
+    --panel-border: #262b38;
+    --text: #e8eaf0;
+    --muted: #8890a3;
+    --accent: #4fd6c0;
+    --accent-dim: #2a5c54;
+    --danger: #ff4d5e;
+    --danger-dim: #4a1a20;
+    --tag-command: #4fa1ff;
+    --tag-agent: #4fd6c0;
+    --tag-emergency: #ff4d5e;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.2px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    font-size: 13px;
+    color: var(--muted);
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  .status-pill.ok .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .status-pill.alert {
+    background: var(--danger-dim);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .status-pill.alert .dot {
+    background: var(--danger);
+    box-shadow: 0 0 8px var(--danger);
+    animation: pulse 1s infinite;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 20px;
+    padding: 20px 28px 28px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .video-panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .video-panel img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .video-placeholder {
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .emergency-banner {
+    position: absolute;
+    inset: auto 0 0 0;
+    background: linear-gradient(0deg, rgba(255,77,94,0.95), rgba(255,77,94,0.75));
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 14px 18px;
+    text-align: center;
+    display: none;
+  }
+
+  .emergency-banner.show {
+    display: block;
+    animation: flash 1s infinite;
+  }
+
+  @keyframes flash {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.25); }
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .mode-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .mode-intent {
+    font-size: 20px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .mode-target {
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 4px;
+  }
+
+  .log {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .log-entry {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .log-tag {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    margin-top: 1px;
+  }
+
+  .log-tag.command { background: rgba(79,161,255,0.15); color: var(--tag-command); }
+  .log-tag.agent { background: rgba(79,214,192,0.15); color: var(--tag-agent); }
+  .log-tag.emergency { background: rgba(255,77,94,0.15); color: var(--tag-emergency); }
+
+  .log-text { color: var(--text); }
+  .log-time { color: var(--muted); font-size: 11px; margin-left: auto; flex-shrink: 0; }
+
+  .log::-webkit-scrollbar { width: 6px; }
+  .log::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
+
+  .empty-log { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AI Navigation Assistant</h1>
+  <div class="status-pill ok" id="status-pill">
+    <span class="dot"></span>
+    <span id="status-text">Monitoring</span>
+  </div>
+</header>
+
+<main>
+  <div class="video-panel">
+    <img id="video" src="/video_feed" alt="Live camera feed"
+         onerror="this.style.display='none'; document.getElementById('video-placeholder').style.display='block';">
+    <div class="video-placeholder" id="video-placeholder" style="display:none;">
+      Waiting for camera feed&hellip;
+    </div>
+    <div class="emergency-banner" id="emergency-banner"></div>
+  </div>
+
+  <div class="sidebar">
+    <div class="card">
+      <h2>Current Mode</h2>
+      <div class="mode-row">
+        <div class="mode-intent" id="mode-intent">Listening&hellip;</div>
+      </div>
+      <div class="mode-target" id="mode-target"></div>
+    </div>
+
+    <div class="card" style="flex: 1; min-height: 0;">
+      <h2>Voice &amp; Agent Log</h2>
+      <div class="log" id="log">
+        <div class="empty-log">No activity yet.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function formatTime(ts) {
+  const d = new Date(ts * 1000);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function formatIntent(intent) {
+  if (!intent) return "Listening…";
+  return intent.replace(/_/g, " ");
+}
+
+async function refresh() {
+  try {
+    const res = await fetch("/api/status");
+    const data = await res.json();
+
+    const pill = document.getElementById("status-pill");
+    const statusText = document.getElementById("status-text");
+    const banner = document.getElementById("emergency-banner");
+    const placeholder = document.getElementById("video-placeholder");
+
+    if (data.camera_error) {
+      placeholder.style.display = "block";
+      placeholder.textContent = data.camera_error;
+    }
+
+    if (data.emergency_active) {
+      pill.className = "status-pill alert";
+      statusText.textContent = "Emergency";
+      banner.textContent = data.emergency_message || "Obstacle detected";
+      banner.classList.add("show");
+    } else {
+      pill.className = "status-pill ok";
+      statusText.textContent = "Monitoring";
+      banner.classList.remove("show");
+    }
+
+    document.getElementById("mode-intent").textContent = formatIntent(data.intent);
+    document.getElementById("mode-target").textContent = data.target ? "Target: " + data.target : "";
+
+    const logEl = document.getElementById("log");
+    if (data.history && data.history.length) {
+      logEl.innerHTML = data.history.slice().reverse().map(item => `
+        <div class="log-entry">
+          <span class="log-tag ${item.kind}">${item.kind}</span>
+          <span class="log-text">${item.text}</span>
+          <span class="log-time">${formatTime(item.time)}</span>
+        </div>
+      `).join("");
+    }
+  } catch (e) {
+    // keep last known UI state on transient fetch errors
+  }
+}
+
+refresh();
+setInterval(refresh, 1000);
+</script>
+
+</body>
+</html>
