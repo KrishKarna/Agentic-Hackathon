@@ -54,6 +54,14 @@ def get_intent(command):
         return "describe_scene", None
 
     if any(word in command for word in [
+        "sign",
+        "read this",
+        "read the text",
+        "what does it say"
+    ]):
+        return "read_sign", None
+
+    if any(word in command for word in [
         "find",
         "look for",
         "where is",
