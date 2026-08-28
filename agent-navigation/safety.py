@@ -5,7 +5,7 @@ def check_emergency(scene):
         "chair",
         "backpack",
         "bottle",
-        "table",
+        "dining table",
         "cell phone"
     ]
 
