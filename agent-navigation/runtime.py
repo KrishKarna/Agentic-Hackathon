@@ -79,16 +79,17 @@ class NavigationRuntime:
             self.log("command", "Okay.")
 
     def _voice_loop(self):
-        while True:
-            intent, target = listen_for_command()
-            self.apply_command(intent, target)
+        try:
+            while True:
+                intent, target = listen_for_command()
+                self.apply_command(intent, target)
+
+        except Exception as e:
+            self.log("system", f"Voice input is unavailable: {e}")
 
     def start_voice_listener(self):
         if self._voice_thread is not None:
             return
-
-        intent, target = listen_for_command()
-        self.apply_command(intent, target)
 
         self._voice_thread = threading.Thread(
             target=self._voice_loop,
