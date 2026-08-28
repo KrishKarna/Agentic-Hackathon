@@ -1,7 +1,19 @@
 import os
+from dotenv import load_dotenv
 from groq import Groq
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+project_root = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..")
+)
+
+load_dotenv(os.path.join(project_root, ".env"))
+
+api_key = os.getenv("GROQ_API_KEY")
+
+if not api_key:
+    raise ValueError("GROQ_API_KEY not found in .env file")
+
+client = Groq(api_key=api_key)
 
 
 class NavigationAgent:
@@ -30,18 +42,26 @@ class NavigationAgent:
         prompt = f"""You are a navigation assistant helping a visually impaired person understand their surroundings.
 
 User's intent: {intent}
-Target object (if relevant): {self.target_object}
-Detected objects (scene): {scene}
-Detected text (OCR): {text}
+Target object: {self.target_object}
+Detected objects: {scene}
+Detected text: {text}
 
-Give ONE short, clear, spoken-style instruction for the user based on this information.
+Give ONE short, clear, spoken-style navigation instruction.
 If nothing relevant is detected, say so briefly.
-Keep it under 20 words. Do not explain your reasoning, just give the instruction."""
+Keep it under 20 words.
+Do not explain your reasoning.
+Only return the instruction."""
 
         response = client.chat.completions.create(
             model="openai/gpt-oss-20b",
-            messages=[{"role": "user", "content": prompt}]
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
         )
+
         return response.choices[0].message.content.strip()
 
 
@@ -49,10 +69,18 @@ if __name__ == "__main__":
     agent = NavigationAgent()
 
     scene = [
-        {"object": "person", "position": "center", "distance": "near"},
-        {"object": "chair", "position": "left", "distance": "far"},
+        {
+            "object": "person",
+            "position": "center",
+            "distance": "near"
+        },
+        {
+            "object": "chair",
+            "position": "left",
+            "distance": "far"
+        }
     ]
 
     agent.set_target("chair")
+
     print(agent.decide("find_object", scene, []))
-    print(agent.decide("check_obstacle", scene, []))
