@@ -4,23 +4,33 @@ import speech_recognition as sr
 def listen():
     recognizer = sr.Recognizer()
 
-    with sr.Microphone() as source:
-        print("Listening...")
-        recognizer.adjust_for_ambient_noise(source, duration=1)
-        audio = recognizer.listen(source)
+    while True:
+        with sr.Microphone() as source:
+            print("Listening...")
+            recognizer.adjust_for_ambient_noise(source, duration=1)
 
-    try:
-        text = recognizer.recognize_google(audio)
-        print("You said:", text)
-        return text.lower()
+            try:
+                audio = recognizer.listen(
+                    source,
+                    timeout=10,
+                    phrase_time_limit=7
+                )
+            except sr.WaitTimeoutError:
+                print("No speech detected. Try again.")
+                continue
 
-    except sr.UnknownValueError:
-        print("Sorry, I couldn't understand that.")
-        return None
+        try:
+            text = recognizer.recognize_google(audio).lower()
+            print("You said:", text)
 
-    except sr.RequestError:
-        print("Speech recognition service error.")
-        return None
+            return text
+
+        except sr.UnknownValueError:
+            print("Sorry, I couldn't understand that. Please try again.")
+
+        except sr.RequestError:
+            print("Speech recognition service error.")
+            return None
 
 
 def get_intent(command):
@@ -38,7 +48,8 @@ def get_intent(command):
         "describe",
         "scene",
         "around me",
-        "surroundings"
+        "surroundings",
+        "what do you see"
     ]):
         return "describe_scene", None
 
@@ -72,8 +83,23 @@ def get_intent(command):
     return None, None
 
 
-if __name__ == "__main__":
-    command = listen()
+def listen_for_command():
+    while True:
+        command = listen()
 
-    if command:
-        print("Command:", command)
+        if not command:
+            continue
+
+        intent, target = get_intent(command)
+
+        if intent is not None:
+            return intent, target
+
+        print("Command not understood. Please try again.")
+
+
+if __name__ == "__main__":
+    intent, target = listen_for_command()
+
+    print("Intent:", intent)
+    print("Target:", target)
