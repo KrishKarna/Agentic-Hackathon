@@ -175,8 +175,7 @@ class NavigationAgent:
     ):
 
         prompt = f"""
-You are a navigation assistant helping
-a visually impaired person.
+You are a navigation assistant helping a visually impaired person.
 
 User intent: {intent}
 
@@ -186,14 +185,30 @@ Detected objects:
 Detected text:
 {text}
 
-Give one short, clear spoken navigation instruction.
+Give ONE short, clear spoken navigation instruction, following these exact patterns:
+
+- If intent is check_obstacle and NOTHING is near/blocking the path:
+  Say exactly: "No obstacles. You can move forward."
+
+- If intent is check_obstacle and something IS near/blocking the path:
+  Say in this pattern: "Obstacle ahead: [object]. [Take left / Take right / Stop]."
+  Choose direction based on the object's position (left/center/right).
+  If the object is directly centered and very close, say "Stop" instead of a direction.
+
+- If intent is describe_scene:
+  Briefly list the key objects and their general direction.
+
+- If intent is find_object:
+  State the object's direction and distance clearly.
+
+- If intent is read_sign:
+  Read back the detected text directly.
 
 Rules:
 - Keep it under 20 words.
-- Focus on the user's intent.
-- Prioritize nearby obstacles.
+- Use simple, direct, consistent phrasing every time — do not vary wording for similar situations.
 - Do not explain your reasoning.
-- Return only the instruction.
+- Return only the instruction, nothing else.
 """
 
         response = client.chat.completions.create(
@@ -213,3 +228,4 @@ Rules:
             .content
             .strip()
         )
+    
