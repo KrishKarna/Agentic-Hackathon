@@ -1,4 +1,8 @@
+import os
 import speech_recognition as sr
+from groq import Groq
+
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 
 def listen():
@@ -22,7 +26,6 @@ def listen():
         try:
             text = recognizer.recognize_google(audio).lower()
             print("You said:", text)
-
             return text
 
         except sr.UnknownValueError:
@@ -34,61 +37,58 @@ def listen():
 
 
 def get_intent(command):
-    command = command.lower()
+    """
+    Uses an LLM to interpret the spoken command into one of the known intents.
+    """
+    valid_objects = [
+        "person", "chair", "cell phone", "backpack",
+        "bottle", "cup", "laptop", "keyboard", "mouse", "book"
+    ]
 
-    if any(word in command for word in [
-        "obstacle",
-        "obstacles",
-        "path",
-        "clear"
-    ]):
-        return "check_obstacle", None
+    prompt = f"""You are an intent classifier for a navigation assistant for visually impaired users.
 
-    if any(word in command for word in [
-        "describe",
-        "scene",
-        "around me",
-        "surroundings",
-        "what do you see"
-    ]):
-        return "describe_scene", None
+The user said: "{command}"
 
-    if any(word in command for word in [
-        "sign",
-        "read this",
-        "read the text",
-        "what does it say"
-    ]):
-        return "read_sign", None
+Classify this into exactly ONE of these intents:
+- check_obstacle (user wants to know about obstacles/path ahead)
+- describe_scene (user wants a general description of surroundings)
+- read_sign (user wants text/signs read aloud)
+- find_object (user wants to locate a specific object)
 
-    if any(word in command for word in [
-        "find",
-        "look for",
-        "where is",
-        "locate"
-    ]):
-        objects = [
-            "person",
-            "chair",
-            "cell phone",
-            "phone",
-            "backpack",
-            "bottle",
-            "cup",
-            "laptop",
-            "keyboard",
-            "mouse",
-            "book"
-        ]
+If the intent is find_object, also identify the target object from this list only: {valid_objects}
+If no object from the list matches, use find_object with target "none".
 
-        for obj in objects:
-            if obj in command:
-                if obj == "phone":
-                    obj = "cell phone"
+Respond in EXACTLY this format, nothing else:
+intent: <intent_name>
+target: <object_name_or_none>"""
 
-                return "find_object", obj
+    try:
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        result = response.choices[0].message.content.strip().lower()
 
-    return None, None
+        intent = None
+        target = None
+
+        for line in result.splitlines():
+            if line.startswith("intent:"):
+                intent = line.split(":", 1)[1].strip()
+            elif line.startswith("target:"):
+                target = line.split(":", 1)[1].strip()
+                if target == "none":
+                    target = None
+
+        valid_intents = ["check_obstacle", "describe_scene", "read_sign", "find_object"]
+        if intent not in valid_intents:
+            return None, None
+
+        return intent, target
+
+    except Exception as e:
+        print(f"Intent classification error: {e}")
+        return None, None
 
 
 def listen_for_command():
@@ -108,6 +108,5 @@ def listen_for_command():
 
 if __name__ == "__main__":
     intent, target = listen_for_command()
-
     print("Intent:", intent)
     print("Target:", target)
